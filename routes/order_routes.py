@@ -220,10 +220,8 @@ def get_all_orders(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    query = db.query(Order)
-    if current_user.role == "STORE":
-        query = query.filter(Order.user_id == current_user.id)
-    orders = query.all()
+    # Remove role-based filtering so everyone can see all orders
+    orders = db.query(Order).all()
     results = []
     for order in orders:
         cakes = []
@@ -235,7 +233,8 @@ def get_all_orders(
                 "price": cake_order.price,
                 "quantity": cake_order.quantity,
                 "order_status": cake_order.order_status,
-                "factory_id": cake_order.factory_id
+                "factory_id": cake_order.factory_id,
+                "user_id": cake_order.user_id
             })
         results.append({
             "main_order_id": order.id,

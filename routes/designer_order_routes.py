@@ -71,3 +71,93 @@ def place_designer_cake_order(
         "audio_instruction": audio_path,
         "message": "Designer cake order placed"
     }
+
+@router.get("/designer-cake/orders")
+def get_all_designer_cake_orders(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # MAIN_STORE can see all, STORE can see their own
+    query = db.query(DesignerCakeOrder)
+    if current_user.role == "STORE":
+        query = query.filter(DesignerCakeOrder.user_id == current_user.id)
+    orders = query.all()
+    results = []
+    for order in orders:
+        results.append({
+            "designer_order_id": order.id,
+            "theme": order.theme,
+            "weight": order.weight,
+            "price": order.price,
+            "quantity": order.quantity,
+            "message_on_cake": order.message_on_cake,
+            "design_image": order.image_url,
+            "print_image": order.print_image_url,
+            "audio_instruction": order.audio_url,
+            "order_status": getattr(order, "order_status", "PLACED"),
+            "factory_id": order.factory_id,
+            "user_id": order.user_id
+        })
+    return results
+
+@router.put("/designer-cake/orders/{designer_order_id}/accept")
+def accept_designer_cake_order(
+    designer_order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "FACTORY":
+        raise HTTPException(status_code=403, detail="Only FACTORY can accept orders")
+
+    order = db.query(DesignerCakeOrder).filter(DesignerCakeOrder.id == designer_order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Designer cake order not found")
+    if order.factory_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to accept this order")
+
+    order.order_status = "ACCEPTED"
+    db.commit()
+    db.refresh(order)
+    return {"designer_order_id": order.id, "status": order.order_status, "message": "Order accepted by factory"}
+
+@router.put("/designer-cake/orders/{designer_order_id}/reject")
+def reject_designer_cake_order(
+    designer_order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "FACTORY":
+        raise HTTPException(status_code=403, detail="Only FACTORY can reject orders")
+
+    order = db.query(DesignerCakeOrder).filter(DesignerCakeOrder.id == designer_order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Designer cake order not found")
+    if order.factory_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to reject this order")
+
+    order.order_status = "REJECTED"
+    db.commit()
+    db.refresh(order)
+    return {"designer_order_id": order.id, "status": order.order_status, "message": "Order rejected by factory"}
+
+@router.put("/designer-cake/orders/{designer_order_id}/ship")
+def ship_designer_cake_order(
+    designer_order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "FACTORY":
+        raise HTTPException(status_code=403, detail="Only FACTORY can ship orders")
+
+    order = db.query(DesignerCakeOrder).filter(DesignerCakeOrder.id == designer_order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Designer cake order not found")
+    if order.factory_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to ship this order")
+    if order.order_status != "ACCEPTED":
+        raise HTTPException(status_code=400, detail="Order must be accepted before shipping")
+
+    order.order_status = "SHIPPED"
+    db.commit()
+    db.refresh(order)
+    return {"designer_order_id": order.id, "status": order.order_status, "message": "Order shipped by factory"}

@@ -161,3 +161,29 @@ def ship_designer_cake_order(
     db.commit()
     db.refresh(order)
     return {"designer_order_id": order.id, "status": order.order_status, "message": "Order shipped by factory"}
+
+@router.put("/designer-cake/orders/{designer_order_id}/receive")
+def receive_designer_cake_order(
+    designer_order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["STORE", "MAIN_STORE"]:
+        raise HTTPException(status_code=403, detail="Only STORE or MAIN_STORE can receive orders")
+
+    order = db.query(DesignerCakeOrder).filter(DesignerCakeOrder.id == designer_order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Designer cake order not found")
+
+    # Only allow the user who placed the order or MAIN_STORE to receive
+    if current_user.role == "STORE" and order.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to receive this order")
+
+    order.order_status = "RECEIVED"
+    db.commit()
+    db.refresh(order)
+    return {
+        "designer_order_id": order.id,
+        "status": order.order_status,
+        "message": "Designer cake order marked as received"
+    }

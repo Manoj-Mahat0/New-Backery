@@ -29,7 +29,13 @@ MYSQL_DB = "knocknoc_bakerys"
 DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}"
 
 # ✅ SQLAlchemy setup
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,       # Avoids broken pipe errors
+    pool_recycle=280,         # Recycles idle connections before timeout
+    pool_size=10,             # Optional: Number of connections to keep in pool
+    max_overflow=20           # Optional: Max overflow if pool_size exceeded
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

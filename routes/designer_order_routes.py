@@ -77,7 +77,7 @@ def get_all_designer_cake_orders(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # MAIN_STORE can see all, STORE can see their own
+    BASE_URL = "https://new-backery.onrender.com/"
     query = db.query(DesignerCakeOrder)
     if current_user.role == "STORE":
         query = query.filter(DesignerCakeOrder.user_id == current_user.id)
@@ -91,14 +91,15 @@ def get_all_designer_cake_orders(
             "price": order.price,
             "quantity": order.quantity,
             "message_on_cake": order.message_on_cake,
-            "design_image": order.image_url,
-            "print_image": order.print_image_url,
-            "audio_instruction": order.audio_url,
+            "design_image": BASE_URL + order.image_url if order.image_url else None,
+            "print_image": BASE_URL + order.print_image_url if order.print_image_url else None,
+            "audio_instruction": BASE_URL + order.audio_url if order.audio_url else None,
             "order_status": getattr(order, "order_status", "PLACED"),
             "factory_id": order.factory_id,
             "user_id": order.user_id
         })
     return results
+
 
 @router.put("/designer-cake/orders/{designer_order_id}/accept")
 def accept_designer_cake_order(

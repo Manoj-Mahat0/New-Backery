@@ -8,7 +8,8 @@ class CakeOrder(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     factory_id = Column(Integer, ForeignKey("users.id"))  # FACTORY is also a user
-    cake_name = Column(String)
+
+    cake_name = Column(String(100))  # ✅ Specify VARCHAR length
     weight = Column(Integer)
     price = Column(Float)
 

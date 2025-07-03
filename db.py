@@ -26,7 +26,7 @@ MYSQL_HOST = "server.cloudsensy.in"
 MYSQL_DB = "knocknoc_bakerys"
 
 # ✅ MySQL connection string (using mysql-connector)
-DATABASE_URL = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}"
+DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}"
 
 # ✅ SQLAlchemy setup
 engine = create_engine(DATABASE_URL)

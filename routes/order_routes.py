@@ -298,6 +298,39 @@ def accept_cake_order(
         "message": "Cake order accepted by factory"
     }
 
+@router.put("/orders/{main_order_id}/accept-all")
+def accept_all_cake_orders(
+    main_order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Only FACTORY can accept orders
+    if current_user.role != "FACTORY":
+        raise HTTPException(status_code=403, detail="Only FACTORY can accept orders")
+
+    # Get all cake orders for this main order assigned to this factory and not already accepted/rejected
+    cake_orders = db.query(CakeOrder).filter(
+        CakeOrder.order_id == main_order_id,
+        CakeOrder.factory_id == current_user.id,
+        CakeOrder.order_status == "PLACED"
+    ).all()
+
+    if not cake_orders:
+        raise HTTPException(status_code=404, detail="No cake orders to accept for this main order and factory")
+
+    accepted_ids = []
+    for cake_order in cake_orders:
+        cake_order.order_status = "ACCEPTED"
+        db.commit()
+        db.refresh(cake_order)
+        accepted_ids.append(cake_order.id)
+
+    return {
+        "main_order_id": main_order_id,
+        "accepted_orders": accepted_ids,
+        "message": f"{len(accepted_ids)} cake orders accepted by factory"
+    }
+
 @router.put("/orders/{cake_order_id}/reject")
 def reject_cake_order(
     cake_order_id: int,

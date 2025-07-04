@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from models.user import User
 from models.order_modals import DesignerCakeOrder
 from db import get_db
+from fastapi import Form
+from fastapi import File, UploadFile
 from routes.order_routes import get_current_user
 from datetime import datetime
 import pytz
@@ -107,6 +109,73 @@ def get_all_designer_cake_orders(
         })
     return results
 
+
+@router.put("/designer-cake/orders/{designer_order_id}/update")
+def update_designer_cake_order(
+    designer_order_id: int,
+    theme: str = Form(None),
+    weight: float = Form(None),
+    price: float = Form(None),
+    quantity: int = Form(None),
+    message_on_cake: str = Form(None),
+    design_image: UploadFile = File(None),
+    print_image: UploadFile = File(None),
+    audio_instruction: UploadFile = File(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    BASE_URL = "https://new-backery.onrender.com/"
+    order = db.query(DesignerCakeOrder).filter(DesignerCakeOrder.id == designer_order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Designer cake order not found")
+
+    # Only the user who placed the order or MAIN_STORE can update
+    if current_user.role == "STORE" and order.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this order")
+
+    if theme is not None:
+        order.theme = theme
+    if weight is not None:
+        order.weight = weight
+    if price is not None:
+        order.price = price
+    if quantity is not None:
+        order.quantity = quantity
+    if message_on_cake is not None:
+        order.message_on_cake = message_on_cake
+
+    # Handle file updates
+    if design_image:
+        design_path = f"media/designs/{design_image.filename}"
+        with open(design_path, "wb") as f:
+            f.write(design_image.file.read())
+        order.image_url = design_path
+    if print_image:
+        print_path = f"media/prints/{print_image.filename}"
+        with open(print_path, "wb") as f:
+            f.write(print_image.file.read())
+        order.print_image_url = print_path
+    if audio_instruction:
+        audio_path = f"media/audio/{audio_instruction.filename}"
+        with open(audio_path, "wb") as f:
+            f.write(audio_instruction.file.read())
+        order.audio_url = audio_path
+
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "designer_order_id": order.id,
+        "theme": order.theme,
+        "weight": order.weight,
+        "price": order.price,
+        "quantity": order.quantity,
+        "message_on_cake": order.message_on_cake,
+        "design_image": BASE_URL + order.image_url if order.image_url else None,
+        "print_image": BASE_URL + order.print_image_url if order.print_image_url else None,
+        "audio_instruction": BASE_URL + order.audio_url if order.audio_url else None,
+        "message": "Designer cake order updated"
+    }
 
 @router.put("/designer-cake/orders/{designer_order_id}/accept")
 def accept_designer_cake_order(

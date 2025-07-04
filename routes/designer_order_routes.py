@@ -101,7 +101,9 @@ def get_all_designer_cake_orders(
             "audio_instruction": BASE_URL + order.audio_url if order.audio_url else None,
             "order_status": getattr(order, "order_status", "PLACED"),
             "factory_id": order.factory_id,
-            "user_id": order.user_id
+            "user_id": order.user_id,
+            "created_at": order.created_at.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S") if order.created_at else None
+
         })
     return results
 

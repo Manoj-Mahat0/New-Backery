@@ -4,6 +4,10 @@ from models.user import User
 from models.order_modals import DesignerCakeOrder
 from db import get_db
 from routes.order_routes import get_current_user
+from datetime import datetime
+import pytz
+
+IST = pytz.timezone("Asia/Kolkata")
 
 router = APIRouter()
 
@@ -54,6 +58,7 @@ def place_designer_cake_order(
         image_url=design_path,
         print_image_url=print_path,
         audio_url=audio_path,
+        created_at=datetime.now(IST),
         order_status="PLACED"
     )
 

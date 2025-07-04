@@ -55,7 +55,7 @@ class DesignerCakeOrder(Base):
     image_url = Column(String(255), nullable=True)          # ✅ Optional
     print_image_url = Column(String(255), nullable=False)   # ✅ Required
     audio_url = Column(String(255), nullable=True)          # ✅ Optional
-
+    created_at = Column(DateTime, default=datetime.utcnow)
     weight = Column(Float, nullable=False)
     price = Column(Float, nullable=False)
     quantity = Column(Integer, default=1)
